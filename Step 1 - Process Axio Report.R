@@ -1,11 +1,15 @@
+# Load Packages -----------------------------------------------------------
 library(tidyverse)
 library(readxl)
 
 
-# Read in data, select the proper "Map - All" worksheet,
+
+# Import and Clean --------------------------------------------------------
+
+# Read in data, select the proper "Map - Comps" worksheet,
 # and read all data in as text
 axio <- read_excel(choose.files(), 
-                   sheet = "Map - All", 
+                   sheet = "Map - Comps", 
                    col_types = "text")
 
 # Find the first row of the actual data and subset
@@ -55,6 +59,94 @@ axio <- axio %>%
         rename(avg_sf = aus,
                eff_rent = erpu,
                eff_rent_sf = erpsf)
+
+
+
+# Manipulate and Analyze --------------------------------------------------
+
+# Let's start by getting subject prop info
+sub_year <- axio[[1, "year"]]
+sub_units <- axio[[1, "units"]]
+sub_avg_sf <- axio[[1, "avg_sf"]]
+sub_eff_rent <- axio[[1, "eff_rent"]]
+sub_eff_rent_sf <- axio[[1, "eff_rent_sf"]]
+sub_occ <- axio[[1, "occ"]]
+
+
+# Now we can add these columns to the axio tble
+# and calculate the variance for each property
+# relative to the subject
+
+# We may also want the absolute variance
+
+axio <- axio %>%
+        mutate(sub_year = sub_year,
+               sub_units = sub_units,
+               sub_avg_sf = sub_avg_sf,
+               sub_eff_rent = sub_eff_rent,
+               sub_eff_rent_sf = sub_eff_rent_sf, 
+               sub_occ = sub_occ,
+               var_year = year - sub_year,
+               var_units = units - sub_units,
+               var_avg_sf = avg_sf - sub_avg_sf,
+               var_eff_rent = eff_rent - sub_eff_rent,
+               var_eff_rent_sf = eff_rent_sf - sub_eff_rent_sf,
+               var_occ = occ - sub_occ,
+               abs_var_year = abs(var_year),
+               abs_var_units = abs(var_units),
+               abs_var_avg_sf = abs(var_avg_sf),
+               abs_var_eff_rent = abs(var_eff_rent),
+               abs_var_eff_rent_sf = abs(var_eff_rent_sf),
+               abs_var_occ = abs(var_occ)
+               )
+
+
+# We now have lot's of variables, for graphing 
+# it may be helpful to have a factor variable
+axio$subject <- factor(if_else(axio$id == 0, 
+                        "Subject Property", 
+                        "Comp"))
+
+
+
+
+
+# Plots -------------------------------------------------------------------
+
+# This one looks kind of busy with so many properties
+ggplot(axio, aes(x = reorder(property_name, eff_rent),
+                 y = eff_rent,
+                 fill = subject)) +
+  geom_bar(stat = 'identity') +
+  coord_flip()
+
+
+ggplot(axio, aes(x = eff_rent, fill = subject)) + 
+  geom_histogram() +
+  scale_x_continuous(labels = scales::dollar) +
+  labs(x = "Effective Rent", 
+       y = "Property Counts", 
+       title = "Axiometrics: Effective Rent Distribution") +
+  guides(fill = FALSE)
+
+
+# This really isn't that informative 
+# because almost all properties are 90-100% Occupied
+ggplot(axio, aes(x = occ, fill = subject)) + 
+  geom_histogram() +
+  scale_x_continuous(labels = scales::percent) +
+  labs(x = "Occupancy", 
+       y = "Property Counts", 
+       title = "Axiometrics: Occupancy Distribution") +
+  guides(fill = FALSE)
+
+
+
+
+
+
+
+
 
 
 
