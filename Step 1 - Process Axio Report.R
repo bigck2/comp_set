@@ -1,6 +1,7 @@
 # Load Packages -----------------------------------------------------------
 library(tidyverse)
 library(readxl)
+library(stringr)
 
 
 
@@ -121,11 +122,16 @@ axio$subject <- factor(if_else(axio$id == 0,
 # Basic Plots -------------------------------------------------------------------
 
 # This one looks kind of busy with so many properties
-ggplot(axio, aes(x = reorder(property_name, eff_rent),
+ggplot(axio[1:20,], aes(x = reorder(property_name, eff_rent),
                  y = eff_rent,
                  fill = subject)) +
   geom_bar(stat = 'identity') +
-  coord_flip()
+  coord_flip() +
+  scale_y_continuous(labels = scales::dollar) +
+  theme_light() +
+  guides(fill = FALSE) +
+  labs(y = "Effective Rent", x = NULL) +
+  geom_text(aes(label = scales::dollar(eff_rent), y = 150))
 
 
 ggplot(axio, aes(x = eff_rent, fill = subject)) + 
@@ -163,7 +169,7 @@ ggplot(axio, aes(x = var_year,
   scale_y_continuous(labels = scales::dollar) +
   labs(x = "Year Built Delta",
        y = "Effective Rent Delta",
-       title = "Axiometrics: Subject Property Comparison") +
+       title = "Relative Rent vs Age") +
   theme_light() +
   scale_color_manual(values = c("lightgreen", "blue"))
 
@@ -176,7 +182,7 @@ ggplot(axio, aes(x = distance, eff_rent, color = subject)) +
   scale_y_continuous(labels = scales::dollar) +
   labs(y = "Effective Rent", 
        x = "Distance (miles) from Subject Property",
-       title = "Axiometrics Rent vs Distance")
+       title = "Rent vs Distance")
 
 
 ggplot(axio, aes(x = distance, y = occ, color = subject)) +
@@ -187,7 +193,7 @@ ggplot(axio, aes(x = distance, y = occ, color = subject)) +
   theme_light() +
   labs(y = "Occupany", 
        x = "Distance (miles) from Subject Property",
-       title = "Axiometrics Occupancy vs Distance")
+       title = "Occupancy vs Distance")
 
 
 

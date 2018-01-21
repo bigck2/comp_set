@@ -14,17 +14,35 @@ ui <- fluidPage(
    
    # Sidebar with some user inputs 
    sidebarLayout(
+     
       sidebarPanel(
          fileInput(inputId = "my_file_input", 
-                   label = "Select Axio CPS report")
+                   label = "Select Axio CPS report"),
+         
+         sliderInput(inputId = "prop_count_filter", 
+                     label = "How many properties should we include:",
+                     min = 1, max = 100, value = 75)
       ),
       
-      # Show a plot of the generated distribution
+      
       mainPanel(
-         dataTableOutput("my_clean_data")
+          tabsetPanel(
+          
+              tabPanel(title = "Data Table",
+                   dataTableOutput("my_clean_data")
+              ),
+              
+              tabPanel(title = "Distance Plots", 
+                       plotOutput("rent_to_distance")),
+              
+              tabPanel(title = "Effective Rent",
+                       plotOutput("eff_rent_plot"))
+            
+          )
       )
       
    )
+   
 )
 
 
@@ -47,9 +65,13 @@ server <- function(input, output) {
     # Note it required some reseach here too,
     # Had to manually enter in 10 times for "text" col_type
     # in non-Shiny script it recycled the argument just fine
+    # axio <- read_excel(paste0(inFile$datapath, ".xlsx"), 
+    #            sheet = "Map - Comps", col_names = FALSE,
+    #            col_types = rep("text", 10))
+    
     axio <- read_excel(paste0(inFile$datapath, ".xlsx"), 
-               sheet = "Map - Comps", col_names = FALSE,
-               col_types = rep("text", 10))
+                       sheet = "Map - Comps", 
+                       col_types = "text")
     
     
     # Find the first row of the actual data and subset
@@ -158,11 +180,44 @@ server <- function(input, output) {
   
   
   output$my_clean_data <- renderDataTable({
-    datatable(axio(),  
+    datatable(axio()[,1:10],  
     options = list(paging = TRUE, 
                    lengthMenu = list(c(2, 5, 10), c('2', '5', '10')),
                    pageLength = 5))  
     })
+  
+  
+  output$rent_to_distance <- renderPlot({
+    
+    require(axio())
+    
+    ggplot(axio(), aes(x = distance, eff_rent, color = subject)) +
+      geom_point(size = 3) +
+      guides(color = FALSE) +
+      geom_hline(yintercept = sub_eff_rent) +
+      theme_light() +
+      scale_y_continuous(labels = scales::dollar) +
+      labs(y = "Effective Rent", 
+           x = "Distance (miles) from Subject Property",
+           title = "Rent vs Distance")
+  }, width = 500, height = 500)
+  
+  
+  output$eff_rent_plot <- renderPlot({
+    
+    # This one looks kind of busy with so many properties
+    ggplot(axio()[1:20,], aes(x = reorder(property_name, eff_rent),
+                            y = eff_rent,
+                            fill = subject)) +
+      geom_bar(stat = 'identity') +
+      coord_flip() +
+      scale_y_continuous(labels = scales::dollar) +
+      theme_light() +
+      guides(fill = FALSE) +
+      labs(y = "Effective Rent", x = NULL) +
+      geom_text(aes(label = scales::dollar(eff_rent), y = 150))
+    
+  })
   
   
   
