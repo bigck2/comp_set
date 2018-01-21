@@ -72,6 +72,10 @@ sub_eff_rent <- axio[[1, "eff_rent"]]
 sub_eff_rent_sf <- axio[[1, "eff_rent_sf"]]
 sub_occ <- axio[[1, "occ"]]
 
+# Note: I was going to remove these subject variables, BUT
+# they may be useful in making plots
+
+
 
 # Now we can add these columns to the axio tble
 # and calculate the variance for each property
@@ -108,10 +112,13 @@ axio$subject <- factor(if_else(axio$id == 0,
                         "Comp"))
 
 
+# It may also make sense to add some factor variable
+# to easily strip out properties below a certain Occ % level
 
 
 
-# Plots -------------------------------------------------------------------
+
+# Basic Plots -------------------------------------------------------------------
 
 # This one looks kind of busy with so many properties
 ggplot(axio, aes(x = reorder(property_name, eff_rent),
@@ -143,10 +150,44 @@ ggplot(axio, aes(x = occ, fill = subject)) +
 
 
 
+# Comparative Plots -------------------------------------------------------
+
+# The call to scale_color_manual should probably be modified
+# just an example of the functionality
+ggplot(axio, aes(x = var_year, 
+                 y = var_eff_rent, 
+                 color = subject)) +
+  geom_hline(yintercept = 0) + geom_vline(xintercept = 0) +
+  geom_point() +
+  guides(color = FALSE) + 
+  scale_y_continuous(labels = scales::dollar) +
+  labs(x = "Year Built Delta",
+       y = "Effective Rent Delta",
+       title = "Axiometrics: Subject Property Comparison") +
+  theme_light() +
+  scale_color_manual(values = c("lightgreen", "blue"))
 
 
+ggplot(axio, aes(x = distance, eff_rent, color = subject)) +
+  geom_point() +
+  guides(color = FALSE) +
+  geom_hline(yintercept = sub_eff_rent) +
+  theme_light() +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(y = "Effective Rent", 
+       x = "Distance (miles) from Subject Property",
+       title = "Axiometrics Rent vs Distance")
 
 
+ggplot(axio, aes(x = distance, y = occ, color = subject)) +
+  geom_point() +
+  guides(color = FALSE) +
+  geom_hline(yintercept = sub_occ) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_light() +
+  labs(y = "Occupany", 
+       x = "Distance (miles) from Subject Property",
+       title = "Axiometrics Occupancy vs Distance")
 
 
 
