@@ -33,10 +33,14 @@ ui <- fluidPage(
               ),
               
               tabPanel(title = "Distance Plots", 
-                       plotOutput("rent_to_distance")),
+                       plotOutput(outputId = "rent_to_distance", 
+                                  brush = "eff_rent_brush"),
+                       dataTableOutput("eff_rent_brushed")),
+              
               
               tabPanel(title = "Effective Rent",
-                       plotOutput("eff_rent_plot"))
+                       plotOutput(outputId = "eff_rent_plot")
+                       )
             
           )
       )
@@ -189,24 +193,40 @@ server <- function(input, output) {
   
   output$rent_to_distance <- renderPlot({
     
-    require(axio())
+    if (input$prop_count_filter <= nrow(axio()) ) {
+      my_rows <- input$prop_count_filter
+    } else {
+      my_rows <- nrow(axio())
+    }
     
-    ggplot(axio(), aes(x = distance, eff_rent, color = subject)) +
+    ggplot(axio()[1:my_rows,], aes(x = distance, eff_rent, color = subject)) +
       geom_point(size = 3) +
       guides(color = FALSE) +
-      geom_hline(yintercept = sub_eff_rent) +
+      geom_hline(yintercept = axio()[[1, "eff_rent"]]) +
       theme_light() +
       scale_y_continuous(labels = scales::dollar) +
       labs(y = "Effective Rent", 
            x = "Distance (miles) from Subject Property",
            title = "Rent vs Distance")
-  }, width = 500, height = 500)
+  })
+  
+  
+  
+  output$eff_rent_brushed <- renderDataTable({
+    brushedPoints(axio(), input$eff_rent_brush)[,c("property_name", "eff_rent", "distance")]
+  }) 
   
   
   output$eff_rent_plot <- renderPlot({
     
+    if (input$prop_count_filter <= nrow(axio()) ) {
+      my_rows <- input$prop_count_filter
+    } else {
+      my_rows <- nrow(axio())
+    }
+    
     # This one looks kind of busy with so many properties
-    ggplot(axio()[1:20,], aes(x = reorder(property_name, eff_rent),
+    ggplot(axio()[1:my_rows,], aes(x = reorder(property_name, eff_rent),
                             y = eff_rent,
                             fill = subject)) +
       geom_bar(stat = 'identity') +
@@ -217,7 +237,8 @@ server <- function(input, output) {
       labs(y = "Effective Rent", x = NULL) +
       geom_text(aes(label = scales::dollar(eff_rent), y = 150))
     
-  })
+  }, height = 1000)
+  
   
   
   
@@ -229,4 +250,21 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
+
+
+
+
+
+
+
+# TODO: Fix the eff_rent_plot to dynamically readjust the height based on the number 
+# of properties select
+
+# TODO: include hover options and datatable to display results
+
+
+
+
+
 
